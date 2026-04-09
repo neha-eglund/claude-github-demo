@@ -56,6 +56,35 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Write consolidated job summary
+        if: always()
+        run: |
+          result_icon() {
+            case "$1" in
+              success)   echo "✅" ;;
+              failure)   echo "❌" ;;
+              cancelled) echo "⏹️" ;;
+              skipped)   echo "⏭️" ;;
+              *)         echo "❓" ;;
+            esac
+          }
+
+          PENTEST_ICON=$(result_icon "${{ needs.pentest.result }}")
+          PR_ICON=$(result_icon "${{ needs.pr-review.result }}")
+          AUDIT_ICON=$(result_icon "${{ needs.dependency-audit.result }}")
+
+          {
+            echo "## 🌙 Nightly AI Orchestrator — $(date -u +%Y-%m-%d)"
+            echo ""
+            echo "| Job | Result |"
+            echo "|-----|--------|"
+            echo "| Payment API Pentest    | $PENTEST_ICON \`${{ needs.pentest.result }}\` |"
+            echo "| PR Review              | $PR_ICON \`${{ needs.pr-review.result }}\` |"
+            echo "| Dependency Audit       | $AUDIT_ICON \`${{ needs.dependency-audit.result }}\` |"
+            echo ""
+            echo "_Morning briefing issue created below by Claude._"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Create morning briefing with Claude
         uses: anthropics/claude-code-action@v1
         env:
