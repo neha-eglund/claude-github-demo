@@ -38,6 +38,10 @@ jobs:
           key: nvd-db-${{ runner.os }}-${{ env.WEEK }}
           restore-keys: nvd-db-${{ runner.os }}-
 
+      - name: Resolve dependencies into target/dependency
+        # Copies all dependency JARs so Dependency-Check can scan them.
+        run: mvn dependency:copy-dependencies --no-transfer-progress
+
       - name: Run OWASP Dependency-Check
         # -DfailBuildOnCVSS=11 means never fail the build (CVSS max is 10).
         # We want the report regardless — Claude decides what to escalate.
@@ -47,7 +51,9 @@ jobs:
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: |
-          MVN_ARGS="-DfailBuildOnCVSS=11 -Dformat=JSON -DprettyPrint=true -DdataDirectory=$HOME/.dependency-check/data"
+          MVN_ARGS="-DfailBuildOnCVSS=11 -Dformat=JSON -DprettyPrint=true"
+          MVN_ARGS="$MVN_ARGS -DdataDirectory=$HOME/.dependency-check/data"
+          MVN_ARGS="$MVN_ARGS -Dscan=target/dependency"
           if [ -n "$NVD_API_KEY" ]; then
             MVN_ARGS="$MVN_ARGS -DnvdApiKey=$NVD_API_KEY"
             echo "NVD API key present (length: ${#NVD_API_KEY})"
