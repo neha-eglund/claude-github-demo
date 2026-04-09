@@ -1,0 +1,25 @@
+# CODEOWNERS — controls who is automatically requested for review on PRs.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default: all files require review from the repo owner
+*                               @neha-eglund
+
+# GitHub Actions workflows — changes here affect CI security and cost
+.github/workflows/              @neha-eglund
+
+# OpenAPI spec — drives the entire spec-driven pentest suite;
+# any change automatically changes what tests are generated
+api-spec/                       @neha-eglund
+
+# Test infrastructure — base classes, config loader, reporters
+src/test/java/com/example/pentest/base/       @neha-eglund
+src/test/java/com/example/pentest/report/     @neha-eglund
+
+# Spec-driven generator — template classes and the @TestFactory
+src/test/java/com/example/pentest/generator/  @neha-eglund
+
+# Stripe-specific tests
+src/test/java/com/example/pentest/stripe/     @neha-eglund
+
+# Build and project configuration
+pom.xml                         @neha-eglund
