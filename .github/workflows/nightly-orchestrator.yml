@@ -21,6 +21,7 @@ jobs:
       contents: read
       issues: write    # post the morning briefing issue
       actions: write   # trigger and read nightly workflow runs
+      id-token: write  # required by claude-code-action to obtain an OIDC token
 
     steps:
       - name: Checkout repository
