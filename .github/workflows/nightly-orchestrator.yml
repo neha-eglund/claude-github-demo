@@ -16,6 +16,15 @@ on:
     - cron: '0 2 * * *'   # 02:00 UTC every night
   workflow_dispatch:
 
+# Top-level permissions are the ceiling for all called workflows.
+# Each sub-workflow's job-level permissions are further restricted within these.
+permissions:
+  contents: read
+  issues: write          # pentest + dependency audit create findings issues
+  pull-requests: write   # pr-review posts review comments
+  actions: read          # pr-review reads CI results on PRs
+  id-token: write        # claude-code-action OIDC token (pr-review, dependency-audit)
+
 jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   # Nightly jobs — run in parallel
