@@ -224,7 +224,18 @@ The SSRF tests **intentionally fail** in CI to surface the finding.
 
 ## Code Review Rules
 
-When reviewing changes to this repository, enforce the following:
+When reviewing changes to this repository, enforce the following.
+
+### Severity labels
+Apply one of these labels to every finding so the author knows what must be fixed before merge:
+
+| Label | Meaning |
+|---|---|
+| **[BLOCKING]** | Must be fixed before merge — security vulnerability, broken CI, data loss risk |
+| **[ADVISORY]** | Should be addressed soon but does not block merge — code quality, missing edge-case coverage |
+| **[NIT]** | Optional — style, naming, minor readability |
+
+Post a top-level summary at the end of the review: `APPROVE`, `REQUEST_CHANGES` (if any BLOCKING finding exists), or `COMMENT`.
 
 ### Security
 - **No secrets in source** — reject any hardcoded API keys, tokens, passwords, or UUIDs that look like real credentials. Placeholder values (`unused`, `demo-key`) are acceptable.

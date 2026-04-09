@@ -64,5 +64,23 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
           plugins: 'code-review@claude-code-plugins'
-          prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ matrix.pr_number }}'
+          prompt: |
+            /code-review:code-review ${{ github.repository }}/pull/${{ matrix.pr_number }}
+
+            This is a security-focused pentest suite (see CLAUDE.md for full context).
+            When reviewing, apply the rules from the "Code Review Rules" section in CLAUDE.md,
+            which includes severity labels ([BLOCKING] / [ADVISORY] / [NIT]) and covers:
+
+            1. Security — IDOR ownership checks, session validation, hardcoded secrets, CORS
+            2. Test quality — realistic probe params, intentional-failure documentation,
+               no bare assumeTrue(false)
+            3. CI / workflow — PENTEST_CREATE_ISSUES opt-in, separate Stripe/Payment API steps,
+               -Dgroups not -DexcludedGroups only, test classes ending in *Test
+            4. Code style — records, switch expressions, no checked exceptions in @TestFactory lambdas
+
+            Known intentional failures (do NOT flag as bugs):
+            - Stripe SSRF tests fail in CI by design — they surface the finding
+            - IDOR / session tests fail against staging — the API has those vulnerabilities
+
+            End your review with a one-line verdict: APPROVE, REQUEST_CHANGES, or COMMENT.
           show_full_output: true
