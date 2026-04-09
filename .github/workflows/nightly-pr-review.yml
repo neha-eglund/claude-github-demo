@@ -1,0 +1,68 @@
+name: Nightly PR Review
+
+on:
+  schedule:
+    - cron: '0 3 * * *'  # 03:00 UTC every night (1h after pentest)
+  workflow_dispatch:      # allow manual trigger from GitHub UI
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 1: list open, non-draft PRs and pass the numbers to the matrix job.
+  # ─────────────────────────────────────────────────────────────────────────────
+  list-open-prs:
+    name: List open pull requests
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      pr_numbers: ${{ steps.list.outputs.pr_numbers }}
+
+    steps:
+      - name: Fetch open non-draft PR numbers
+        id: list
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBERS=$(gh pr list \
+            --repo "${{ github.repository }}" \
+            --state open \
+            --json number,isDraft \
+            --jq '[.[] | select(.isDraft == false) | .number]')
+          echo "pr_numbers=$PR_NUMBERS" >> "$GITHUB_OUTPUT"
+          echo "PRs to review: $PR_NUMBERS"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 2: review each PR in parallel (capped at 3 concurrent to respect rate limits).
+  # ─────────────────────────────────────────────────────────────────────────────
+  review-pr:
+    name: Review PR #${{ matrix.pr_number }}
+    needs: list-open-prs
+    if: needs.list-open-prs.outputs.pr_numbers != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        pr_number: ${{ fromJson(needs.list-open-prs.outputs.pr_numbers) }}
+      fail-fast: false   # review all PRs even if one review job fails
+      max-parallel: 3    # avoid hammering the Anthropic API
+
+    permissions:
+      contents: read
+      pull-requests: write  # post the review comment
+      issues: read
+      id-token: write
+      actions: read         # allow Claude to read CI results on the PR
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Review PR with Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
+          plugins: 'code-review@claude-code-plugins'
+          prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ matrix.pr_number }}'
+          show_full_output: true
