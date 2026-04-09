@@ -1,0 +1,74 @@
+name: Nightly AI Orchestrator
+
+# Single entry point for all nightly AI jobs.
+# Claude acts as the orchestration agent: it triggers each nightly workflow,
+# waits for results, and posts a morning briefing issue summarising findings.
+#
+# To add a new nightly job in future:
+#   1. Create the workflow file (e.g. nightly-dependency-audit.yml)
+#   2. Add its name to the "Workflows to run" list in the prompt below
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # 02:00 UTC every night
+  workflow_dispatch:
+
+jobs:
+  orchestrate:
+    name: Claude Nightly Orchestrator
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write    # post the morning briefing issue
+      actions: write   # trigger and read nightly workflow runs
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude as orchestration agent
+        uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: >-
+            --allowed-tools
+            Bash(gh workflow run:*),Bash(gh run list:*),Bash(gh run view:*),Bash(gh issue create:*),Bash(sleep:*),Bash(date:*)
+          prompt: |
+            You are the nightly AI orchestration agent for ${{ github.repository }}.
+            Today's date: $(date -u +%Y-%m-%d).
+
+            ## Workflows to run
+            Trigger these two workflows in parallel, then wait for both to finish:
+            - nightly-pentest.yml
+            - nightly-pr-review.yml
+
+            ## Steps
+
+            1. **Trigger both workflows simultaneously** using:
+               gh workflow run <name> --repo ${{ github.repository }}
+               Capture the run ID for each by immediately running:
+               gh run list --repo ${{ github.repository }} --workflow <name> --limit 1 --json databaseId --jq '.[0].databaseId'
+
+            2. **Poll until both runs complete** (check every 30 seconds):
+               gh run view <run-id> --repo ${{ github.repository }} --json status,conclusion --jq '{status,conclusion}'
+               A run is done when status == "completed".
+
+            3. **Read results** for each completed run:
+               gh run view <run-id> --repo ${{ github.repository }} --json conclusion,jobs
+               Note: conclusions are "success", "failure", or "cancelled".
+
+            4. **Create a morning briefing issue** titled:
+               "🌙 Nightly AI Report — $(date -u +%Y-%m-%d)"
+               with labels: ["nightly-report"]
+               Body should include:
+               - Pentest run: conclusion + count of failed tests if available
+               - PR Review run: conclusion + list of PRs reviewed if available
+               - Any BLOCKING findings from either workflow
+               - Recommended actions for the day
+
+            Keep the issue body concise — bullet points, no walls of text.
+          show_full_output: true

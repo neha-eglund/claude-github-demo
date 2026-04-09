@@ -1,9 +1,7 @@
 name: Nightly PR Review
 
 on:
-  schedule:
-    - cron: '0 3 * * *'  # 03:00 UTC every night (1h after pentest)
-  workflow_dispatch:      # allow manual trigger from GitHub UI
+  workflow_dispatch:      # triggered by nightly-orchestrator.yml or manually
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────────
