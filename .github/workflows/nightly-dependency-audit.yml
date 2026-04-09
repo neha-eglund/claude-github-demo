@@ -27,6 +27,17 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Set weekly cache key
+        run: echo "WEEK=$(date -u +%Y-W%V)" >> "$GITHUB_ENV"
+
+      - name: Cache NVD database
+        uses: actions/cache@v4
+        with:
+          path: ~/.dependency-check/data
+          # Refresh the NVD cache weekly — stale CVE data is acceptable for a nightly audit.
+          key: nvd-db-${{ runner.os }}-${{ env.WEEK }}
+          restore-keys: nvd-db-${{ runner.os }}-
+
       - name: Run OWASP Dependency-Check
         # -DfailBuildOnCVSS=11 means never fail the build (CVSS max is 10).
         # We want the report regardless — Claude decides what to escalate.
@@ -40,6 +51,7 @@ jobs:
             -DfailBuildOnCVSS=11 \
             -Dformat=JSON \
             -DprettyPrint=true \
+            -DdataDirectory="$HOME/.dependency-check/data" \
             ${NVD_API_KEY:+-DnvdApiKey="$NVD_API_KEY"} \
             --no-transfer-progress
         continue-on-error: true
