@@ -50,6 +50,7 @@ jobs:
         run: |
           MVN_ARGS="-DfailBuildOnCVSS=11 -Dformat=JSON -DprettyPrint=true"
           MVN_ARGS="$MVN_ARGS -DdataDirectory=$HOME/.dependency-check/data"
+          MVN_ARGS="$MVN_ARGS -DskipTestScope=false"   # all deps in this project are test-scoped
           if [ -n "$NVD_API_KEY" ]; then
             MVN_ARGS="$MVN_ARGS -DnvdApiKey=$NVD_API_KEY"
             echo "NVD API key present (length: ${#NVD_API_KEY})"
