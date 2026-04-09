@@ -1,6 +1,6 @@
-# Project: Payment API Pentest Suite
+# Project: Nightly AI Jobs
 
-A Java 24 Maven project for automated penetration testing of payment APIs. Tests are generated from an OpenAPI spec and run nightly via GitHub Actions against both the **Payment API** and the **Stripe sandbox API**.
+A Java 24 Maven project that runs automated nightly AI-driven jobs via GitHub Actions — including payment API penetration testing, automated PR code review, and dependency vulnerability auditing. All jobs are orchestrated by a single entry point and summarised each morning in a GitHub issue.
 
 ---
 
