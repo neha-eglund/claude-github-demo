@@ -29,11 +29,17 @@ jobs:
       - name: Run OWASP Dependency-Check
         # -DfailBuildOnCVSS=11 means never fail the build (CVSS max is 10).
         # We want the report regardless — Claude decides what to escalate.
+        # NVD_API_KEY is required to avoid severe rate-limiting on the NVD feed.
+        # Obtain a free key at: https://nvd.nist.gov/developers/request-an-api-key
+        # Then add it as a repository secret: gh secret set NVD_API_KEY --body "..."
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: |
           mvn org.owasp:dependency-check-maven:check \
             -DfailBuildOnCVSS=11 \
             -Dformat=JSON \
             -DprettyPrint=true \
+            ${NVD_API_KEY:+-DnvdApiKey="$NVD_API_KEY"} \
             --no-transfer-progress
         continue-on-error: true
 
