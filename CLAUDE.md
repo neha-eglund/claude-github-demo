@@ -1,6 +1,57 @@
 # Project: Nightly AI Jobs
 
-A Java 24 Maven project that runs automated nightly AI-driven jobs via GitHub Actions — including payment API penetration testing, automated PR code review, and dependency vulnerability auditing. All jobs are orchestrated by a single entry point and summarised each morning in a GitHub issue.
+A platform that uses **Claude AI as an autonomous agent** to run security and code quality jobs every night — replacing manual review cycles with AI-driven analysis that reads context, reasons about findings, and takes action directly in GitHub.
+
+---
+
+## The Concept: AI as a Nightly Engineer
+
+Traditional CI runs scripts and produces reports. This project takes a different approach: Claude is given **tools**, **context** (this CLAUDE.md, the codebase, the OpenAPI spec), and a **goal** — and it decides what to do, just like a human engineer would.
+
+Each night Claude:
+- Attacks the payment API looking for security vulnerabilities
+- Reviews every open pull request against the team's code review rules
+- Scans all dependencies for known CVEs and triages the findings
+- Writes a morning briefing summarising what it found and what needs attention
+
+The key difference from traditional automation is that Claude **reasons** rather than pattern-matches. It understands *why* a test failure is a security finding, *why* a code change violates a rule, and *why* a CVE matters for this specific project — and communicates that reasoning in plain English.
+
+---
+
+## What AI Capabilities This Provides
+
+| Capability | How it works |
+|---|---|
+| **Autonomous action** | Claude calls `gh pr review`, `gh issue create`, etc. directly — it doesn't just report, it acts |
+| **Context awareness** | Claude reads CLAUDE.md, the OpenAPI spec, and existing issues before making decisions |
+| **Intelligent triage** | For CVEs and pentest findings, Claude decides severity and whether a finding is new or already tracked |
+| **Judgment calls** | PR reviews distinguish intentional failures (SSRF tests, IDOR staging findings) from real bugs |
+| **Natural language output** | Morning briefings, issue bodies, and review comments are written for humans, not log parsers |
+| **Deduplication** | Claude checks existing issues before creating new ones — no duplicate CVE or pentest issues |
+| **Configurable scope** | Any job can be toggled off for a manual run without changing code |
+
+---
+
+## Nightly Job Overview
+
+```
+02:00 UTC
+    │
+    ▼
+nightly-orchestrator.yml          ← single entry point
+    │
+    ├──► nightly-pentest.yml       ← Claude generates & runs API attack tests
+    │        └── creates GitHub issues for High/Medium findings
+    │
+    ├──► nightly-pr-review.yml     ← Claude reviews every open PR
+    │        └── posts --request-changes or --approve directly on the PR
+    │
+    ├──► nightly-dependency-audit.yml  ← OWASP scan + Claude CVE triage
+    │        └── creates GitHub issues for HIGH/CRITICAL CVEs
+    │
+    └──► morning-briefing          ← Claude reads all results
+             └── creates "🌙 Nightly AI Report — YYYY-MM-DD" issue
+```
 
 ---
 
