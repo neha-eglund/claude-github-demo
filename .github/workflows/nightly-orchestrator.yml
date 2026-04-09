@@ -42,9 +42,10 @@ jobs:
             Today's date: $(date -u +%Y-%m-%d).
 
             ## Workflows to run
-            Trigger these two workflows in parallel, then wait for both to finish:
+            Trigger these three workflows in parallel, then wait for all to finish:
             - nightly-pentest.yml
             - nightly-pr-review.yml
+            - nightly-dependency-audit.yml
 
             ## Steps
 
@@ -67,7 +68,8 @@ jobs:
                Body should include:
                - Pentest run: conclusion + count of failed tests if available
                - PR Review run: conclusion + list of PRs reviewed if available
-               - Any BLOCKING findings from either workflow
+               - Dependency audit: conclusion + count of CRITICAL/HIGH CVEs found
+               - Any BLOCKING findings from any workflow
                - Recommended actions for the day
 
             Keep the issue body concise — bullet points, no walls of text.
