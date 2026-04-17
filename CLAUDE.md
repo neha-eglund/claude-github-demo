@@ -7,9 +7,9 @@ A platform that uses **Claude AI as an autonomous agent** to run security and co
 ## The Concept
 
 Each night Claude runs three jobs automatically:
-- Attacks the payment API looking for security vulnerabilities
+- Runs security tests against the Stripe API (auth, IDOR, injection, rate limiting, exposure)
 - Reviews every open pull request against the team's code review rules
-- Scans all dependencies for known CVEs and triages the findings
+- Checks all Maven dependencies for available updates and flags security-relevant ones
 - Writes a morning briefing summarising what it found and what needs attention
 
 ---
@@ -28,26 +28,27 @@ flowchart TD
 
     ORCH --> PENTEST
     ORCH --> PRREVIEW
-    ORCH --> DEPAUDIT
+    ORCH --> SECUPDATES
 
     subgraph PARALLEL ["Nightly jobs — run in parallel"]
-        PENTEST["🔒 **Pentest**\nnightly-pentest.yml"]
+        PENTEST["🔒 **Stripe Pentest**\nnightly-pentest.yml"]
         PRREVIEW["👁 **PR Review**\nnightly-pr-review.yml"]
-        DEPAUDIT["📦 **Dependency Audit**\nnightly-dependency-audit.yml"]
+        SECUPDATES["📦 **Security Updates**\nnightly-security-updates.yml"]
     end
 
-    PENTEST --> CLAUDE_P["Claude\n① Reads OpenAPI spec\n② Generates & runs attack tests\n③ Classifies failures as findings"]
+    PENTEST --> STRIPE["JUnit 5 test suite\n(Stripe API — sandbox)\nauth · IDOR · injection\nrate limit · exposure"]
+    STRIPE --> CLAUDE_P["Claude\n① Classifies failures as findings\n② Creates GitHub issues for High/Medium"]
     PRREVIEW --> CLAUDE_R["Claude\n① Reads PR diff\n② Applies CLAUDE.md rules\n③ Posts review verdict"]
-    DEPAUDIT --> OWASP["OWASP Dependency-Check\n(NVD database, weekly cache)"]
-    OWASP --> CLAUDE_D["Claude\n① Reads CVE report\n② Deduplicates against issues\n③ Creates GitHub issues"]
+    SECUPDATES --> MVN["mvn versions:display-dependency-updates\nversions:display-plugin-updates"]
+    MVN --> CLAUDE_D["Claude\n① Flags security-relevant upgrades\n② Deduplicates against open issues\n③ Creates GitHub issues"]
 
     CLAUDE_P --> ISS_P["GitHub Issues\n[Security Finding] High / Medium"]
     CLAUDE_R --> REV["PR Reviews\n--request-changes / --approve"]
-    CLAUDE_D --> ISS_D["GitHub Issues\n[Dependency] CRITICAL / HIGH"]
+    CLAUDE_D --> ISS_D["GitHub Issues\n[Security Update] dependency → latestVersion"]
 
     PENTEST --> BRIEF
     PRREVIEW --> BRIEF
-    DEPAUDIT --> BRIEF
+    SECUPDATES --> BRIEF
 
     BRIEF["☀ **Morning Briefing**\nClaude reads all results\n& recommended actions"]
     BRIEF --> REPORT["🌙 Nightly AI Report Issue\ncreated in GitHub daily"]
@@ -61,6 +62,8 @@ flowchart TD
     style ISS_P    fill:#fdecea,stroke:#e57373
     style ISS_D    fill:#fdecea,stroke:#e57373
     style REV      fill:#e8f5e9,stroke:#66bb6a
+    style STRIPE   fill:#f0f0f0,stroke:#999
+    style MVN      fill:#f0f0f0,stroke:#999
 ```
 
 ---
