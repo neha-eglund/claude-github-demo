@@ -120,7 +120,7 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: >-
             --allowed-tools
-            Bash(gh issue create:*),Bash(gh issue list:*),Bash(gh run view:*),Bash(date:*)
+            Bash(gh issue create:*),Bash(gh issue list:*),Bash(gh run view:*),Bash(gh pr list:*),Bash(gh pr view:*),Bash(date:*)
           prompt: |
             You are the morning briefing agent for ${{ github.repository }}.
             Today's date: $(date -u +%Y-%m-%d).
@@ -141,12 +141,20 @@ jobs:
                (pentest vulnerabilities, CVEs, PR review BLOCKING items):
                gh issue list --repo ${{ github.repository }} --state open --limit 20 --json number,title,labels,createdAt
 
-            3. Create a morning briefing issue titled:
+            3. For the PR Review section, fetch the review comments left on each open PR overnight:
+               a. List all open PRs:
+                  gh pr list --repo ${{ github.repository }} --state open --json number,title,author
+               b. For each PR, fetch the reviews posted:
+                  gh pr view <number> --repo ${{ github.repository }} --json reviews,number,title
+               Summarise per PR: PR title, verdict (APPROVED / CHANGES_REQUESTED / COMMENTED),
+               and the key findings (BLOCKING / ADVISORY / NIT) from the review body.
+
+            4. Create a morning briefing issue titled:
                "🌙 Nightly AI Report — $(date -u +%Y-%m-%d)"
                Labels: nightly-report
                Body (bullet points, concise):
                - **Pentest**: ${{ needs.pentest.result }} — note any new vulnerability issues opened
-               - **PR Review**: ${{ needs.pr-review.result }} — note any BLOCKING findings
+               - **PR Review**: ${{ needs.pr-review.result }} — for each reviewed PR list the verdict and key findings
                - **Security Updates**: ${{ needs.security-updates.result }} — note any flagged dependency upgrades
                - **Recommended actions**: what @neha-eglund should look at today
           show_full_output: true
